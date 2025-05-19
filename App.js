@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Favicon from './assets/favicon.jpg'; // Импортируем запасную картинку
 import {
   View,
   Text,
@@ -8,8 +9,11 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import { heightPercentageToDP, widthPercentageToDP } from "react-native-responsive-screen";
 import * as Location from 'expo-location';
 import WeatherDayCard from './WeatherDayCard'; // Импортируем компонент для прогноза
+import { BlurView } from 'expo-blur'; // Импортируем BlurView
+
 
 const WEATHER_API_KEY = 'S8EZG6Y5NW4URSU4T2PMECRZA';
 
@@ -45,6 +49,25 @@ const WeatherImageScreen = () => {
     }
   }, [weather]);
 
+  const fetchCityByCoordinates = async (latitude, longitude) => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat= ${latitude}&lon=${longitude}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.address) {
+        const city = data.address.city || data.address.town || data.address.village || 'Неизвестное место';
+        return city;
+      } else {
+        console.error('Ошибка при получении данных о городе:', data);
+        return 'Неизвестное место';
+      }
+    } catch (error) {
+      console.error('Ошибка сети при запросе к OpenStreetMap:', error);
+      return 'Неизвестное место';
+    }
+  };
+
   const fetchWeatherByLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -56,15 +79,17 @@ const WeatherImageScreen = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
-      const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/ ${latitude},${longitude}?unitGroup=metric&key=${WEATHER_API_KEY}&contentType=json`;
+      // Получаем город через OpenStreetMap Nominatim
+      const city = await fetchCityByCoordinates(latitude, longitude);
 
+      const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/ ${latitude},${longitude}?unitGroup=metric&key=${WEATHER_API_KEY}&contentType=json`;
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.currentConditions) {
         const current = data.currentConditions;
         setWeather({
-          city: data.resolvedAddress || 'Неизвестное место',
+          city: city || data.resolvedAddress || 'Неизвестное место',
           temp: current.temp,
           feelsLike: current.feelslike,
           conditions: current.icon,
@@ -223,20 +248,27 @@ const WeatherImageScreen = () => {
 return (
   <View style={styles.container}>
     {/* Фоновое изображение */}
-    {generatedImage && (
       <Image
-        source={{ uri: generatedImage }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-        onError={(e) => {
-          console.error('Ошибка загрузки изображения:', e.nativeEvent.error);
-          setError('Не удалось загрузить изображение');
-        }}
-      />
-    )}
+      source={generatedImage ? { uri: generatedImage } : Favicon} // Условный выбор источника
+      style={styles.backgroundImage}
+      resizeMode="cover"
+      onError={(e) => {
+        console.error('Ошибка загрузки изображения:', e.nativeEvent.error);
+        setError('Не удалось загрузить изображение');
+      }}
+    />
 
     {/* Контент поверх фона */}
     <View style={styles.foregroundContent}>
+    {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Image source={require('./assets/favicon.jpg')} style={{height:heightPercentageToDP(5), width:heightPercentageToDP(5),alignSelf:'center'}}/>
+          {/* <ActivityIndicator size="large" color="#0000ff" /> */}
+          <Text>Генерация изображения...</Text>
+        </View>
+      ) : !generatedImage ? (
+        <Text style={styles.noImageText}>Изображение не сгенерировано</Text>
+      ) : null}
       <Text style={styles.header}>🌤️ Погода сейчас</Text>
 
       {error && (
@@ -250,7 +282,6 @@ return (
           <Text style={styles.text}>📍 Город: {weather.city}</Text>
           <Text style={styles.text}>🌡️ Температура: {weather.temp}°C</Text>
           <Text style={styles.text}>🧣 Ощущается как: {weather.feelsLike}°C</Text>
-          <Text style={styles.text}>☁️ Условия: {weather.conditions}</Text>
           <Text style={styles.text}>🌬️ Ветер: {weather.windSpeed} км/ч</Text>
           <Text style={styles.text}>💧 Влажность: {weather.humidity}%</Text>
         </>
@@ -261,7 +292,11 @@ return (
       <Text style={styles.subtitle}>📅 Прогноз на 5 дней</Text>
 
       {/* Контейнер под прогноз с glass-стилем */}
-      <View style={styles.glassForecastContainer}>
+      <BlurView
+      intensity={30} // Сила размытия (чем больше значение, тем сильнее размытие)
+      tint="default"   // Тип размытия: 'light', 'dark', 'default'
+      style={styles.glassForecastContainer}
+    >
         {forecast.length > 0 ? (
           <FlatList
             data={forecast}
@@ -273,18 +308,10 @@ return (
         ) : (
           <Text style={styles.noDataText}>Прогноз недоступен</Text>
         )}
-      </View>
+</BlurView>
+    
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text>Генерация изображения...</Text>
-        </View>
-      ) : !generatedImage ? (
-        <Text style={styles.noImageText}>Изображение не сгенерировано</Text>
-      ) : null}
-
-      <Button title="🔄 Сгенерировать снова" onPress={handleRegenerate} disabled={isLoading || !weather} />
+      <Button style={styles.appButtonContainer} title="🔄 Сгенерировать снова" onPress={handleRegenerate} disabled={isLoading || !weather} />
     </View>
   </View>
 );
@@ -306,7 +333,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // полупрозрачный фон
+    marginTop: heightPercentageToDP(6)
   },
   glassForecastContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)', // стеклянный эффект
@@ -367,6 +394,17 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     textAlign: 'center',
   },
+  appButtonContainer: {
+    elevation: 8,
+    backgroundColor: "#009688",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12
+  },
+  loadingContainer:{
+    marginTop:heightPercentageToDP(4),
+    alignSelf:'center'
+  }
 });
 
 export default WeatherImageScreen;

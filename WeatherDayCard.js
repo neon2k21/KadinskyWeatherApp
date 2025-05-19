@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { LinearGradient, Rect, Defs, Stop } from 'react-native-svg';
+import { BlurView } from 'expo-blur'; // Импортируем BlurView
 
 // Словарь для преобразования условий погоды в эмодзи
 const weatherIcons = {

@@ -9,16 +9,21 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@react-native-community/blur": "^4.4.1",
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/stack": "^7.3.1",
     "axios": "^1.9.0",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
     "expo": "~53.0.8",
+    "expo-blur": "~14.1.4",
     "expo-location": "^18.1.4",
     "expo-status-bar": "~2.2.3",
+    "link": "^2.1.1",
+    "npx": "^10.2.2",
     "react": "19.0.0",
-    "react-native": "0.79.2",
+    "react-native": "^0.79.2",
+    "react-native-responsive-screen": "^1.4.2",
     "react-native-svg": "^15.11.2"
   },
   "devDependencies": {
