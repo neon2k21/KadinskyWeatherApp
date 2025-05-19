@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { LinearGradient, Rect, Defs, Stop } from 'react-native-svg';
 
 // Словарь для преобразования условий погоды в эмодзи
@@ -26,42 +26,43 @@ const getWeatherIcon = (conditions) => {
 const WeatherDayCard = ({ day }) => {
   const icon = getWeatherIcon(day.conditions);
 
-  // Расчёт ширины заполнения прогресс-бара
-  const progressWidth = ((day.temp - day.tempMin) / (day.tempMax - day.tempMin)) * 100;
+  // Округляем среднюю температуру для прогресс-бара
+  const avgTemp = Math.round((day.tempMax + day.tempMin) / 2);
+  const progressWidth = ((avgTemp - day.tempMin) / (day.tempMax - day.tempMin)) * 100;
 
   return (
     <View style={styles.cardContainer}>
       {/* День недели */}
       <Text style={styles.date}>{day.date}</Text>
 
-      {/* Иконка погоды */}
-      <Text style={styles.weatherIcon}>{icon}</Text>
+      {/* Иконка и температура в отдельной строке */}
+      <View style={styles.weatherRow}>
+        <Text style={styles.weatherIcon}>{icon}</Text>
+        <View style={styles.temperatureContainer}>
+          <Text style={styles.tempMin}>{Math.round(day.tempMin)}°</Text>
 
-      {/* Прогресс-бар с температурой */}
-      <View style={styles.temperatureContainer}>
-        <Text style={styles.tempMin}>{day.tempMin}°</Text>
+          {/* Прогресс-бар с glass-дизайном */}
+          <View style={styles.progressBarGlassContainer}>
+            <Svg width="100%" height="8">
+              <Defs>
+                <LinearGradient id="gradient" x1="0" y1="0" x2="100%" y2="0">
+                  <Stop offset="0%" stopColor="#4fc3f7" />
+                  <Stop offset="100%" stopColor="#f44336" />
+                </LinearGradient>
+              </Defs>
+              <Rect
+                x="0"
+                y="0"
+                width={`${progressWidth}%`}
+                height="8"
+                rx="4"
+                fill="url(#gradient)"
+              />
+            </Svg>
+          </View>
 
-        {/* Прогресс-бар */}
-        <View style={styles.progressBarContainer}>
-          <Svg width="100%" height="8">
-            <Defs>
-              <LinearGradient id="gradient" x1="0" y1="0" x2="100%" y2="0">
-                <Stop offset="0%" stopColor="#2196F3" />
-                <Stop offset="100%" stopColor="#FF5722" />
-              </LinearGradient>
-            </Defs>
-            <Rect
-              x="0"
-              y="0"
-              width={`${progressWidth}%`} // Ширина зависит от текущей температуры
-              height="8"
-              rx="4"
-              fill="url(#gradient)"
-            />
-          </Svg>
+          <Text style={styles.tempMax}>{Math.round(day.tempMax)}°</Text>
         </View>
-
-        <Text style={styles.tempMax}>{day.tempMax}°</Text>
       </View>
     </View>
   );
@@ -69,28 +70,39 @@ const WeatherDayCard = ({ day }) => {
 
 export default WeatherDayCard;
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   cardContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#282C34',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    width
+    flexDirection: 'column',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    backdropFilter: 'blur(10px)', // Работает только на iOS или через специальные либы на Android
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
   },
   date: {
     fontSize: 16,
-    color: '#fff',
-    marginRight: 10,
+    color: '#ffffffcc',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  weatherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   weatherIcon: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#fff',
-    marginRight: 10,
+    marginRight: 12,
   },
   temperatureContainer: {
     flex: 1,
@@ -100,17 +112,24 @@ const styles = StyleSheet.create({
   },
   tempMin: {
     fontSize: 16,
-    color: '#fff',
+    color: '#aeeaff',
+    fontWeight: '500',
+    minWidth: 30,
+    textAlign: 'left',
   },
   tempMax: {
     fontSize: 16,
-    color: '#fff',
+    color: '#ff9a9a',
+    fontWeight: '500',
+    minWidth: 30,
+    textAlign: 'right',
   },
-  progressBarContainer: {
+  progressBarGlassContainer: {
     flex: 1,
     height: 8,
+    marginHorizontal: 8,
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: '#FF0000', // Серый фон для прогресс-бара
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // полупрозрачный фон
   },
 });
